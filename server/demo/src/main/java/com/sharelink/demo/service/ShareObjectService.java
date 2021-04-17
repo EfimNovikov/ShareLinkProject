@@ -7,6 +7,8 @@ import com.sharelink.demo.repository.ShareObjectRepository;
 import com.sharelink.demo.service.tools.mapper.StringId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -27,11 +29,11 @@ public class ShareObjectService {
         int newId = 0;
         if (lastUploaded.isPresent()){
             ShareObjectEntity lastObject = lastUploaded.get();
-            newId = lastObject.getDisplay_code()<=MAX_CODE_VAL ? lastObject.getDisplay_code()+1 : 0;
+            newId = lastObject.getDisplayCode()<=MAX_CODE_VAL ? lastObject.getDisplayCode()+1 : 0;
         }
 
         ShareObjectEntity newObjectEntity = ShareObjectEntity.builder()
-                .display_code(newId)
+                .displayCode(newId)
                 .shareText(shareData.getShareObject())
                 .creationTime(LocalDateTime.now())
                 .build();
@@ -39,14 +41,25 @@ public class ShareObjectService {
         shareObjectRepository.save(newObjectEntity);
 
         return CreatedShareObjectDTO.builder()
-                .id(StringId.parseStringId(newId))
+                .displayCode(StringId.parseStringId(newId))
                 .shareObject(newObjectEntity.getShareText())
                 .createdTime(newObjectEntity.getCreationTime()).build();
     }
 
     public List<CreatedShareObjectDTO> getShareObjects (Pageable pageable){
         return shareObjectRepository.findAll(pageable).get()
-            .map(p -> new CreatedShareObjectDTO(StringId.parseStringId(p.getDisplay_code()), p.getShareText(), p.getCreationTime()))
+            .map(p -> new CreatedShareObjectDTO(StringId.parseStringId(p.getDisplayCode()), p.getShareText(), p.getCreationTime(), p.getId()))
             .collect(Collectors.toList());
+    }
+
+    public Optional<ShareObjectEntity> getShareObject (int displayCode){
+        return shareObjectRepository.findAllByDisplayCode(displayCode);
+    }
+    public ResponseEntity<String> deleteShareObject(long id){
+        if (shareObjectRepository.existsById(id)){
+            shareObjectRepository.deleteById(id);
+        } else
+            return new ResponseEntity<>("Error: Record not found", HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>("Successfully deleted", HttpStatus.OK);
     }
 }

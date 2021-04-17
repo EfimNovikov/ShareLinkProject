@@ -1,9 +1,6 @@
 package com.sharelink.demo.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -11,8 +8,10 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Builder
+@NoArgsConstructor
 public class CreatedShareObjectDTO {
-    private String id;
+    private String displayCode;
     private String shareObject;
     private LocalDateTime createdTime;
+    private long id;
 }

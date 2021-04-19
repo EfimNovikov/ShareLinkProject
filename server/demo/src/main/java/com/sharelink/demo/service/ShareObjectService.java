@@ -43,7 +43,9 @@ public class ShareObjectService {
         return CreatedShareObjectDTO.builder()
                 .displayCode(StringId.parseStringId(newId))
                 .shareObject(newObjectEntity.getShareText())
-                .createdTime(newObjectEntity.getCreationTime()).build();
+                .createdTime(newObjectEntity.getCreationTime())
+                .id(newObjectEntity.getId())
+                .build();
     }
 
     public List<CreatedShareObjectDTO> getShareObjects (Pageable pageable){

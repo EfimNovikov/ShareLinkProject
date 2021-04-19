@@ -11,6 +11,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,7 +29,13 @@ public class ShareLinkController {
 
     @PostMapping("/api/newShare")
     @ResponseBody
-    public CreatedShareObjectDTO createdShareObjectDTO(@RequestBody NewShareObjectDTO newShareObjectDTO){
+    public CreatedShareObjectDTO createdShareObjectDTO(@RequestBody NewShareObjectDTO newShareObjectDTO,
+                                                       HttpServletResponse response){
+        SecureRandom secureRandom = new SecureRandom();
+        Base64.Encoder encoder = Base64.getUrlEncoder().withoutPadding();
+        byte[] buffer = new byte[20];
+        secureRandom.nextBytes(buffer);
+        response.addCookie(new Cookie("share_uid",encoder.encodeToString(buffer)));
         return shareObjectService.createNewShareObject(newShareObjectDTO);
     }
 

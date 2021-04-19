@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor @Builder @NoArgsConstructor
 @Table(name = "share_objects")
 public class ShareObjectEntity {
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     private long id;
 

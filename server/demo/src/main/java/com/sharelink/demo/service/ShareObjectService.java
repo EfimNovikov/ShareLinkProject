@@ -2,15 +2,19 @@ package com.sharelink.demo.service;
 
 import com.sharelink.demo.dto.CreatedShareObjectDTO;
 import com.sharelink.demo.dto.NewShareObjectDTO;
+import com.sharelink.demo.entity.SessionEntity;
 import com.sharelink.demo.entity.ShareObjectEntity;
+import com.sharelink.demo.repository.SessionRepository;
 import com.sharelink.demo.repository.ShareObjectRepository;
-import com.sharelink.demo.service.tools.mapper.StringId;
+import com.sharelink.demo.service.tools.StringId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpSession;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -24,7 +28,11 @@ public class ShareObjectService {
     @Autowired
     ShareObjectRepository shareObjectRepository;
 
-    public CreatedShareObjectDTO createNewShareObject (NewShareObjectDTO shareData){
+    @Autowired
+    SessionRepository sessionRepository;
+
+    @Transactional
+    public CreatedShareObjectDTO createNewShareObject (NewShareObjectDTO shareData, HttpSession httpSession){
         Optional<ShareObjectEntity> lastUploaded = shareObjectRepository.findTopByOrderByIdDesc();
         int newId = 0;
         if (lastUploaded.isPresent()){
@@ -39,6 +47,12 @@ public class ShareObjectService {
                 .build();
 
         shareObjectRepository.save(newObjectEntity);
+        sessionRepository.save(SessionEntity
+                .builder()
+                .objectId(newObjectEntity.getId())
+                .sessionId(httpSession.getId())
+                .build()
+        );
 
         return CreatedShareObjectDTO.builder()
                 .displayCode(StringId.parseStringId(newId))
@@ -48,20 +62,46 @@ public class ShareObjectService {
                 .build();
     }
 
+    @Transactional
     public List<CreatedShareObjectDTO> getShareObjects (Pageable pageable){
         return shareObjectRepository.findAll(pageable).get()
             .map(p -> new CreatedShareObjectDTO(StringId.parseStringId(p.getDisplayCode()), p.getShareText(), p.getCreationTime(), p.getId()))
             .collect(Collectors.toList());
     }
 
+    @Transactional
     public Optional<ShareObjectEntity> getShareObject (int displayCode){
-        return shareObjectRepository.findAllByDisplayCode(displayCode);
+        return shareObjectRepository.findOneByDisplayCode(displayCode);
     }
-    public ResponseEntity<String> deleteShareObject(long id){
-        if (shareObjectRepository.existsById(id)){
-            shareObjectRepository.deleteById(id);
+
+    @Transactional
+    public CreatedShareObjectDTO modifyShareObject (NewShareObjectDTO newShareObjectDTO, String sessionId, long id) {
+        if (sessionRepository.existsBySessionIdAndObjectId(sessionId, id)) {
+            ShareObjectEntity entity = shareObjectRepository.getOne(id);
+            entity.setShareText(newShareObjectDTO.getShareObject());
+            shareObjectRepository.save(entity);
+
+            return CreatedShareObjectDTO.builder()
+                    .id(entity.getId())
+                    .shareObject(entity.getShareText())
+                    .createdTime(entity.getCreationTime())
+                    .displayCode(StringId.parseStringId(entity.getDisplayCode()))
+                    .build();
         } else
-            return new ResponseEntity<>("Error: Record not found", HttpStatus.NOT_FOUND);
+            return null;
+    }
+
+    @Transactional
+    public ResponseEntity<String> deleteShareObject(long id, HttpSession session){
+        if (sessionRepository.existsBySessionIdAndObjectId(session.getId(), id)){
+            shareObjectRepository.deleteById(id);
+            sessionRepository.deleteByObjectId(id);
+            if (sessionRepository.countBySessionId(session.getId())==0) {
+                session.invalidate();
+                sessionRepository.deleteAllBySessionId(session.getId());
+            }
+        } else
+            return new ResponseEntity<>("Error: Record not found", HttpStatus.FORBIDDEN);
         return new ResponseEntity<>("Successfully deleted", HttpStatus.OK);
     }
 }

@@ -5,16 +5,16 @@ import com.sharelink.demo.dto.NewShareObjectDTO;
 import com.sharelink.demo.entity.ShareObjectEntity;
 import com.sharelink.demo.service.ShareObjectService;
 import com.sharelink.demo.service.tools.mapper.ShareObjectDTOMapper;
-import com.sharelink.demo.service.tools.mapper.StringId;
+import com.sharelink.demo.service.tools.StringId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.security.SecureRandom;
-import java.util.Base64;
+import javax.servlet.http.HttpSession;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,13 +30,14 @@ public class ShareLinkController {
     @PostMapping("/api/newShare")
     @ResponseBody
     public CreatedShareObjectDTO createdShareObjectDTO(@RequestBody NewShareObjectDTO newShareObjectDTO,
-                                                       HttpServletResponse response){
-        SecureRandom secureRandom = new SecureRandom();
-        Base64.Encoder encoder = Base64.getUrlEncoder().withoutPadding();
-        byte[] buffer = new byte[20];
-        secureRandom.nextBytes(buffer);
-        response.addCookie(new Cookie("share_uid",encoder.encodeToString(buffer)));
-        return shareObjectService.createNewShareObject(newShareObjectDTO);
+                                                       HttpServletRequest request,
+                                                       HttpSession httpSession){
+
+        String r = request.getParameter("g-recaptcha-response");
+        request.getSession();
+        CreatedShareObjectDTO createdShareObjectDTO = shareObjectService.createNewShareObject(newShareObjectDTO, httpSession);
+        httpSession.setMaxInactiveInterval(5*60*60);
+        return createdShareObjectDTO;
     }
 
     @GetMapping(value = "/api/getShares")
@@ -70,8 +71,29 @@ public class ShareLinkController {
         }
     }
 
+    @PatchMapping("/api/changeShare/{id}")
+    public CreatedShareObjectDTO modifyShareObject (@PathVariable(name = "id") long id,
+                                                    @RequestBody NewShareObjectDTO newShareObjectDTO,
+                                                    HttpSession httpSession,
+                                                    HttpServletResponse response){
+
+        CreatedShareObjectDTO createdShareObjectDTO = shareObjectService.modifyShareObject(
+                newShareObjectDTO, httpSession.getId(), id
+        );
+        if (createdShareObjectDTO != null){
+            return createdShareObjectDTO;
+        }
+        else {
+            response.setStatus(HttpStatus.FORBIDDEN.value());
+            return null;
+        }
+    }
+
     @DeleteMapping("/api/deleteShare/{id}")
-    public ResponseEntity<String> deleteShareObject(@PathVariable(name = "id")long id){
-        return shareObjectService.deleteShareObject(id);
+    public ResponseEntity<String> deleteShareObject(@PathVariable(name = "id")long id,
+                                                    HttpSession httpSession,
+                                                    HttpServletRequest request){
+        request.getSession(false);
+        return shareObjectService.deleteShareObject(id, httpSession);
     }
 }

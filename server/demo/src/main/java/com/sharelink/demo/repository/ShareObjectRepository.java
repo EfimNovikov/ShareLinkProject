@@ -14,5 +14,5 @@ public interface ShareObjectRepository extends JpaRepository<ShareObjectEntity, 
 
     Optional<ShareObjectEntity> findTopByOrderByIdDesc();
 
-    Optional<ShareObjectEntity> findAllByDisplayCode(int displayCode);
+    Optional<ShareObjectEntity> findOneByDisplayCode(int displayCode);
 }

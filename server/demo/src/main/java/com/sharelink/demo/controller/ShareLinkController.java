@@ -3,6 +3,7 @@ package com.sharelink.demo.controller;
 import com.sharelink.demo.dto.CreatedShareObjectDTO;
 import com.sharelink.demo.dto.NewShareObjectDTO;
 import com.sharelink.demo.entity.ShareObjectEntity;
+import com.sharelink.demo.service.ReCaptchaValidationService;
 import com.sharelink.demo.service.ShareObjectService;
 import com.sharelink.demo.service.tools.mapper.ShareObjectDTOMapper;
 import com.sharelink.demo.service.tools.StringId;
@@ -27,17 +28,26 @@ public class ShareLinkController {
     @Autowired
     ShareObjectDTOMapper objectMapper;
 
+    @Autowired
+    ReCaptchaValidationService captchaValidationService;
+
     @PostMapping("/api/newShare")
     @ResponseBody
     public CreatedShareObjectDTO createdShareObjectDTO(@RequestBody NewShareObjectDTO newShareObjectDTO,
                                                        HttpServletRequest request,
-                                                       HttpSession httpSession){
+                                                       HttpSession httpSession,
+                                                       HttpServletResponse response){
 
         String r = request.getParameter("g-recaptcha-response");
-        request.getSession();
-        CreatedShareObjectDTO createdShareObjectDTO = shareObjectService.createNewShareObject(newShareObjectDTO, httpSession);
-        httpSession.setMaxInactiveInterval(5*60*60);
-        return createdShareObjectDTO;
+        if (captchaValidationService.recaptchaIsValid(r)) {
+            request.getSession();
+            CreatedShareObjectDTO createdShareObjectDTO = shareObjectService.createNewShareObject(newShareObjectDTO, httpSession);
+            httpSession.setMaxInactiveInterval(5 * 60 * 60);
+            return createdShareObjectDTO;
+        } else {
+            response.setStatus(HttpStatus.UNPROCESSABLE_ENTITY.value());
+            return CreatedShareObjectDTO.builder().build();
+        }
     }
 
     @GetMapping(value = "/api/getShares")

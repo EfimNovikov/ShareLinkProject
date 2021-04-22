@@ -28,5 +28,5 @@ public class ShareObjectEntity {
 
     @NotNull
     @Column(name = "share_code")
-    private int displayCode;
+    private String displayCode;
 }

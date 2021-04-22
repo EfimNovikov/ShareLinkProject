@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ShareObjectRepository extends JpaRepository<ShareObjectEntity, Long>, JpaSpecificationExecutor<ShareObjectEntity> {
@@ -14,5 +15,7 @@ public interface ShareObjectRepository extends JpaRepository<ShareObjectEntity, 
 
     Optional<ShareObjectEntity> findTopByOrderByIdDesc();
 
-    Optional<ShareObjectEntity> findOneByDisplayCode(int displayCode);
+    Optional<ShareObjectEntity> findOneByDisplayCode(String displayCode);
+
+    List<ShareObjectEntity> findByDisplayCodeStartsWith(String displayCode);
 }

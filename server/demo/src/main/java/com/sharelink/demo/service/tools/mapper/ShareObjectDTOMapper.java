@@ -15,7 +15,7 @@ public class ShareObjectDTOMapper {
 
     public CreatedShareObjectDTO mapShareEntityToDTO (ShareObjectEntity entity){
         CreatedShareObjectDTO createdShareObjectDTO = modelMapper.map(entity, CreatedShareObjectDTO.class);
-        createdShareObjectDTO.setDisplayCode(StringId.parseStringId(entity.getDisplayCode()));
+        createdShareObjectDTO.setDisplayCode(entity.getDisplayCode());
         return createdShareObjectDTO;
     }
 

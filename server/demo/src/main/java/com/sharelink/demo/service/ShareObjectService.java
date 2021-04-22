@@ -37,11 +37,12 @@ public class ShareObjectService {
         int newId = 0;
         if (lastUploaded.isPresent()){
             ShareObjectEntity lastObject = lastUploaded.get();
-            newId = lastObject.getDisplayCode()<=MAX_CODE_VAL ? lastObject.getDisplayCode()+1 : 0;
+            int lastCode = Integer.parseInt(lastObject.getDisplayCode());
+            newId = lastCode<=MAX_CODE_VAL ? lastCode+1 : 0;
         }
 
         ShareObjectEntity newObjectEntity = ShareObjectEntity.builder()
-                .displayCode(newId)
+                .displayCode(StringId.parseStringId(newId))
                 .shareText(shareData.getShareObject())
                 .creationTime(LocalDateTime.now())
                 .build();
@@ -65,13 +66,20 @@ public class ShareObjectService {
     @Transactional
     public List<CreatedShareObjectDTO> getShareObjects (Pageable pageable){
         return shareObjectRepository.findAll(pageable).get()
-            .map(p -> new CreatedShareObjectDTO(StringId.parseStringId(p.getDisplayCode()), p.getShareText(), p.getCreationTime(), p.getId()))
+            .map(p -> new CreatedShareObjectDTO(p.getDisplayCode(), p.getShareText(), p.getCreationTime(), p.getId()))
             .collect(Collectors.toList());
     }
 
     @Transactional
-    public Optional<ShareObjectEntity> getShareObject (int displayCode){
+    public Optional<ShareObjectEntity> getShareObject (String displayCode){
         return shareObjectRepository.findOneByDisplayCode(displayCode);
+    }
+
+    @Transactional
+    public List<CreatedShareObjectDTO> searchLike(String displayCode){
+        List<ShareObjectEntity> entities = shareObjectRepository.findByDisplayCodeStartsWith(displayCode);
+        return entities.stream().map(p -> new CreatedShareObjectDTO(p.getDisplayCode(), p.getShareText(), p.getCreationTime(), p.getId()))
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -85,7 +93,7 @@ public class ShareObjectService {
                     .id(entity.getId())
                     .shareObject(entity.getShareText())
                     .createdTime(entity.getCreationTime())
-                    .displayCode(StringId.parseStringId(entity.getDisplayCode()))
+                    .displayCode(entity.getDisplayCode())
                     .build();
         } else
             return null;

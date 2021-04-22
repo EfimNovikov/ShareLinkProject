@@ -6,11 +6,11 @@ import com.sharelink.demo.entity.ShareObjectEntity;
 import com.sharelink.demo.service.ReCaptchaValidationService;
 import com.sharelink.demo.service.ShareObjectService;
 import com.sharelink.demo.service.tools.mapper.ShareObjectDTOMapper;
-import com.sharelink.demo.service.tools.StringId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -18,9 +18,16 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 @RestController
 public class ShareLinkController {
+
+    private final static Pattern DISPLAY_CODE_PATTERN = Pattern.compile("^[0-9]+$");
+
+    private boolean isSane(String code){
+        return StringUtils.hasLength(code) && DISPLAY_CODE_PATTERN.matcher(code).matches();
+    }
 
     @Autowired
     ShareObjectService shareObjectService;
@@ -39,7 +46,8 @@ public class ShareLinkController {
                                                        HttpServletResponse response){
 
         String r = request.getParameter("g-recaptcha-response");
-        if (captchaValidationService.recaptchaIsValid(r)) {
+        //TODO: remove or clause before production
+        if (captchaValidationService.recaptchaIsValid(r) || true) {
             request.getSession();
             CreatedShareObjectDTO createdShareObjectDTO = shareObjectService.createNewShareObject(newShareObjectDTO, httpSession);
             httpSession.setMaxInactiveInterval(5 * 60 * 60);
@@ -64,21 +72,27 @@ public class ShareLinkController {
 
     @GetMapping("/api/getShare/{displayCode}")
     public CreatedShareObjectDTO getShareObject (@PathVariable(name = "displayCode") String displayCode){
-        int displayCodeInt;
-        try {
-            displayCodeInt = Integer.parseInt(displayCode);
-        } catch (NumberFormatException e){
+        if (isSane(displayCode)) {
+            Optional<ShareObjectEntity> entity = shareObjectService.getShareObject(displayCode);
+            if (entity.isEmpty())
+                return CreatedShareObjectDTO.builder().build();
+            else {
+                CreatedShareObjectDTO createdShareObjectDTO = objectMapper.mapShareEntityToDTO(entity.get());
+                createdShareObjectDTO.setDisplayCode(entity.get().getDisplayCode());
+                createdShareObjectDTO.setCreatedTime(entity.get().getCreationTime());
+                return createdShareObjectDTO;
+            }
+        } else {
             return CreatedShareObjectDTO.builder().build();
         }
-        Optional<ShareObjectEntity> entity = shareObjectService.getShareObject(displayCodeInt);
-        if (entity.isEmpty())
-            return CreatedShareObjectDTO.builder().build();
-        else {
-            CreatedShareObjectDTO createdShareObjectDTO = objectMapper.mapShareEntityToDTO(entity.get());
-            createdShareObjectDTO.setDisplayCode(StringId.parseStringId(entity.get().getDisplayCode()));
-            createdShareObjectDTO.setCreatedTime(entity.get().getCreationTime());
-            return createdShareObjectDTO;
-        }
+    }
+
+    @GetMapping("/api/search")
+    public List<CreatedShareObjectDTO> searchShareObject(@RequestParam(name = "term") String term){
+        if (isSane(term))
+            return shareObjectService.searchLike(term);
+        else
+            return null;
     }
 
     @PatchMapping("/api/changeShare/{id}")

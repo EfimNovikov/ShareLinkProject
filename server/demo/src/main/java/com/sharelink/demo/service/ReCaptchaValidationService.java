@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 @Service
 public class ReCaptchaValidationService {
 
-    private static Pattern RESPONSE_PATTERN = Pattern.compile("[A-Za-z0-9_-]+");
+    private static final Pattern RESPONSE_PATTERN = Pattern.compile("[A-Za-z0-9_-]+");
 
     @Autowired
     CaptchaSettings captchaSettings;

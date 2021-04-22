@@ -25,9 +25,9 @@ com/sharelink/demo/entity/ShareObjectEntity.java
  com.sharelink.demo.entity.ShareObjectEntity$ShareObjectEntityBuilder
 com/sharelink/demo/service/tools/mapper/ShareObjectDTOMapper.java
  com.sharelink.demo.service.tools.mapper.ShareObjectDTOMapper
-com/sharelink/demo/controller/ShareLinkController.java
- com.sharelink.demo.controller.ShareLinkController
 com/sharelink/demo/repository/ShareObjectRepository.java
  com.sharelink.demo.repository.ShareObjectRepository
+com/sharelink/demo/controller/ShareLinkController.java
+ com.sharelink.demo.controller.ShareLinkController
 com/sharelink/demo/service/ShareObjectService.java
  com.sharelink.demo.service.ShareObjectService

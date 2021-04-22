@@ -38,7 +38,7 @@ public class ShareObjectService {
         if (lastUploaded.isPresent()){
             ShareObjectEntity lastObject = lastUploaded.get();
             int lastCode = Integer.parseInt(lastObject.getDisplayCode());
-            newId = lastCode<=MAX_CODE_VAL ? lastCode+1 : 0;
+            newId = lastCode<MAX_CODE_VAL ? lastCode+1 : 0;
         }
 
         ShareObjectEntity newObjectEntity = ShareObjectEntity.builder()

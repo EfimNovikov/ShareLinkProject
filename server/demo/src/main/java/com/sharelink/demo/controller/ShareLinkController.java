@@ -2,6 +2,7 @@ package com.sharelink.demo.controller;
 
 import com.sharelink.demo.dto.CreatedShareObjectDTO;
 import com.sharelink.demo.dto.NewShareObjectDTO;
+import com.sharelink.demo.dto.ShareMessage;
 import com.sharelink.demo.entity.ShareObjectEntity;
 import com.sharelink.demo.service.ReCaptchaValidationService;
 import com.sharelink.demo.service.ShareObjectService;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +40,9 @@ public class ShareLinkController {
     @Autowired
     ReCaptchaValidationService captchaValidationService;
 
+    @Autowired
+    SimpMessagingTemplate simpMessagingTemplate;
+
     @PostMapping("/api/newShare")
     @ResponseBody
     public CreatedShareObjectDTO createdShareObjectDTO(@RequestBody NewShareObjectDTO newShareObjectDTO,
@@ -51,6 +56,7 @@ public class ShareLinkController {
             request.getSession();
             CreatedShareObjectDTO createdShareObjectDTO = shareObjectService.createNewShareObject(newShareObjectDTO, httpSession);
             httpSession.setMaxInactiveInterval(5 * 60 * 60);
+            simpMessagingTemplate.convertAndSend("/topic/shares",new ShareMessage(createdShareObjectDTO.getId()));
             return createdShareObjectDTO;
         } else {
             response.setStatus(HttpStatus.UNPROCESSABLE_ENTITY.value());
